@@ -1,0 +1,13 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run",
+      "type": "node-terminal",
+      "request": "launch",
+      "preLaunchTask": "run",
+      "command": "echo run.ps1 completed.",
+      "cwd": "${workspaceFolder}"
+    }
+  ]
+}
