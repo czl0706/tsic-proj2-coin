@@ -3,7 +3,8 @@
 module spawn_queue #(
 	parameter FIFO_DEPTH = 4,
 	parameter FIFO_ADDR_W = 2,
-	parameter [31:0] LFSR_SEED = 32'hACE1_1234
+	parameter [31:0] POS_SEED = 32'hACE1_1234,
+	parameter [31:0] TYPE_SEED = 32'h1D2C_3B4A
 ) (
 	input wire clk,
 	input wire resetn,
@@ -21,15 +22,16 @@ localparam TYPE_COIN_3 = 1;
 localparam TYPE_COIN_5 = 2;
 localparam TYPE_MINUS5 = 3;
 
-wire [31:0] rnd;
-wire [3:0] cand_lane = rnd[ 3:0];
-wire [3:0] cand_xoff = rnd[ 7:4];
-wire [6:0] cand_pct  = rnd[14:8];
+wire [31:0] pos_rnd;
+wire [31:0] type_rnd;
+wire [3:0] cand_lane = pos_rnd[3:0];
+wire [3:0] cand_xoff = pos_rnd[7:4];
+wire [6:0] cand_pct  = type_rnd[6:0];
 reg [1:0] cand_type;
 
-wire pct_valid = cand_pct < 100;
-wire lfsr_en = enable && !full;
-wire fifo_wr_en = enable && !full && pct_valid;
+wire cand_valid = cand_pct < 100;
+wire cand_next = enable && !full;
+wire fifo_wr_en = cand_next && cand_valid;
 wire [9:0] fifo_wr_data = {cand_lane, cand_xoff, cand_type};
 
 always @(*) begin
@@ -40,12 +42,21 @@ always @(*) begin
 end
 
 lfsr32 #(
-	.SEED(LFSR_SEED)
-) u_lfsr32 (
+	.SEED(POS_SEED)
+) u_pos_lfsr (
 	.clk(clk),
 	.resetn(resetn),
-	.en(lfsr_en),
-	.rnd(rnd)
+	.en(cand_next),
+	.rnd(pos_rnd)
+);
+
+lfsr32 #(
+	.SEED(TYPE_SEED)
+) u_type_lfsr (
+	.clk(clk),
+	.resetn(resetn),
+	.en(cand_next),
+	.rnd(type_rnd)
 );
 
 fifo #(

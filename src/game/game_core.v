@@ -49,7 +49,8 @@ wire [MAX_OBJ*OBJ_TYPE_BITS-1:0] obj_type_bus;
 wire [9:0] timer;
 wire [13:0] score;
 wire [13:0] high_score;
-wire [1:0] state;
+wire obj_ready;
+wire game_over;
 
 // Frame start signal
 assign frame_tick = bg_tvalid && bg_tready && bg_tuser[0];
@@ -69,6 +70,8 @@ game_ctrl #(
 	.btn_right(btn_right),
 	.btn_start(btn_start),
 
+	.obj_ready(obj_ready),
+
 	.player_x(player_x),
 	.player_dir(player_dir),
 
@@ -81,7 +84,7 @@ game_ctrl #(
 	.timer(timer),
 	.score(score),
 	.high_score(high_score),
-	.state(state)
+	.game_over(game_over)
 );
 
 bg_layer #(
@@ -136,7 +139,7 @@ ui_layer #( `SVO_PASS_PARAMS ) u_ui_layer (
 	.timer(timer),
 	.score(score),
 	.high_score(high_score),
-	.state(state),
+	.game_over(game_over),
 	.btn_left(btn_left),
 	.btn_right(btn_right),
 

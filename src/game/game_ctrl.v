@@ -38,7 +38,7 @@ module game_ctrl #(
 	output reg [9:0] timer,
 	output reg [13:0] score,
 	output reg [13:0] high_score,
-	output reg [1:0] state
+	output game_over
 );
 localparam S_PLAY = 1;
 localparam S_OVER = 2;
@@ -62,25 +62,28 @@ reg [XOFF_BITS    -1:0] obj_xoff [0:MAX_OBJ-1];
 reg [OBJ_TYPE_BITS-1:0] obj_type [0:MAX_OBJ-1];
 reg [OBJ_Y_BITS   -1:0] obj_ypos [0:MAX_OBJ-1];
 reg [4:0] obj_count;
+reg [1:0] state;
 
-reg [5:0] frame_count;
-reg [7:0] spawn_timer;
+reg [5:0] sec_cnt;
+reg [7:0] spawn_cnt;
 reg btn_start_q;
 
 wire btn_start_rise = btn_start && !btn_start_q;
-wire player_left_valid = player_x > player_speed;
-wire player_right_valid = player_x + player_speed < PLAYER_MAX_X;
-wire pause = 0;
+wire can_left = player_x > player_speed;
+wire can_right = player_x + player_speed < PLAYER_MAX_X;
+wire pause;
 
 wire [9:0] spawn_data;
 wire spawn_fifo_empty;
-wire obj_queue_ready = obj_count < MAX_OBJ;
+wire obj_has_room = obj_count < MAX_OBJ;
 wire remove_valid;
 wire spawn_pop = frame_tick && state == S_PLAY && !pause &&
-				  spawn_timer == 0 && !spawn_fifo_empty &&
-				  (obj_queue_ready || remove_valid);
+				  spawn_cnt == 0 && !spawn_fifo_empty &&
+				  (obj_has_room || remove_valid);
 
-assign obj_ready = obj_queue_ready;
+assign pause = 0;
+assign obj_ready = obj_has_room;
+assign game_over = state == S_OVER;
 
 spawn_queue u_spawn_queue (
 	.clk(clk),
@@ -172,8 +175,8 @@ always @(posedge clk) begin
 		score <= 0;
 		high_score <= HIGH_SCORE_START;
 		state <= S_PLAY;
-		frame_count <= 0;
-		spawn_timer <= SPAWN_PERIOD_FRAMES;
+		sec_cnt <= 0;
+		spawn_cnt <= SPAWN_PERIOD_FRAMES;
 		btn_start_q <= 0;
 
 		for (i = 0; i < MAX_OBJ; i = i + 1) begin
@@ -193,8 +196,8 @@ always @(posedge clk) begin
 			timer <= TIMER_START;
 			score <= 0;
 			state <= S_PLAY;
-			frame_count <= 0;
-			spawn_timer <= SPAWN_PERIOD_FRAMES;
+			sec_cnt <= 0;
+			spawn_cnt <= SPAWN_PERIOD_FRAMES;
 
 			for (i = 0; i < MAX_OBJ; i = i + 1) begin
 				obj_lane[i] <= 0;
@@ -207,13 +210,13 @@ always @(posedge clk) begin
 
 				// Direction control
 				if (btn_left && !btn_right) begin
-					if (player_left_valid)
+					if (can_left)
 						player_x <= player_x - player_speed;
 					else
 						player_x <= 0;
 					player_dir <= 0;
 				end else if (btn_right && !btn_left) begin
-					if (player_right_valid)
+					if (can_right)
 						player_x <= player_x + player_speed;
 					else
 						player_x <= PLAYER_MAX_X;
@@ -265,12 +268,12 @@ always @(posedge clk) begin
 				end
 
 				if (spawn_pop)
-					spawn_timer <= SPAWN_PERIOD_FRAMES - 1;
-				else if (spawn_timer != 0)
-					spawn_timer <= spawn_timer - 1;
+					spawn_cnt <= SPAWN_PERIOD_FRAMES - 1;
+				else if (spawn_cnt != 0)
+					spawn_cnt <= spawn_cnt - 1;
 
-				if (frame_count == 59) begin
-					frame_count <= 0;
+				if (sec_cnt == 59) begin
+					sec_cnt <= 0;
 
 					if (timer > 1) begin
 						timer <= timer - 1;
@@ -281,7 +284,7 @@ always @(posedge clk) begin
 							high_score <= final_score;
 					end
 				end else begin
-					frame_count <= frame_count + 1;
+					sec_cnt <= sec_cnt + 1;
 				end
 			end
 		end

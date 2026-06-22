@@ -126,6 +126,7 @@ Current game states in `game_ctrl`:
 ```
 
 Reset starts directly in `playing`. State value `0` is currently unused.
+The state register stays inside `game_ctrl`; render layers only receive the simpler `game_over` signal.
 
 `btn_start` restarts the game:
 
@@ -137,10 +138,10 @@ Reset starts directly in `playing`. State value `0` is currently unused.
 
 ### Timer and Score
 
-- `timer` starts from `TIMER_START`, currently 30 seconds.
+- `timer` starts from `TIMER_START`, currently 90 seconds.
 - `timer` decreases once every 60 frame ticks.
 - When `timer` reaches 0, the game enters game over.
-- `score` is displayed as 4 digits and clamps visually at `9999`.
+- `score` is displayed as 4 digits.
 - `high_score` updates only when the game enters game over.
 
 Object score rules:
@@ -260,6 +261,7 @@ Current UI behavior:
 - left/right button indicators at screen edges
 - center score blinks during game over
 - digits are logic-generated seven-segment shapes
+- UI receives `game_over`; it does not depend on the internal state encoding
 
 ## Common Modules
 
@@ -268,7 +270,7 @@ Current UI behavior:
 - `debounce`: counter-based debounce for synchronized active-low buttons
 - `rom`: synchronous ROM wrapper for RGB565 assets
 - `fifo`: small synchronous FIFO used by `spawn_queue`
-- `lfsr32`: pseudo-random generator for object spawn logic
+- `lfsr32`: pseudo-random generator for object spawn logic; `spawn_queue` uses one LFSR for position and one for type
 
 ## Asset Format
 
