@@ -24,7 +24,7 @@ module game_core #(
 );
 localparam MAX_OBJ = 16;
 localparam LANE_BITS = 4;
-localparam X_BIAS_BITS = 4;
+localparam XOFF_BITS = 4;
 localparam OBJ_TYPE_BITS = 2;
 localparam OBJ_Y_BITS = 10;
 
@@ -40,23 +40,24 @@ wire [0:0] obj_tuser;
 
 wire frame_tick;
 wire [9:0] player_x;
-wire player_facing_right;
-wire [MAX_OBJ-1:0] obj_active_bus;
-wire [MAX_OBJ*LANE_BITS-1:0] obj_lane_bus;
-wire [MAX_OBJ*X_BIAS_BITS-1:0] obj_x_bias_bus;
-wire [MAX_OBJ*OBJ_Y_BITS-1:0] obj_y_bus;
+wire player_dir;
+wire [MAX_OBJ              -1:0] obj_valid_bus;
+wire [MAX_OBJ*LANE_BITS    -1:0] obj_lane_bus;
+wire [MAX_OBJ*XOFF_BITS    -1:0] obj_xoff_bus;
+wire [MAX_OBJ*OBJ_Y_BITS   -1:0] obj_ypos_bus;
 wire [MAX_OBJ*OBJ_TYPE_BITS-1:0] obj_type_bus;
 wire [9:0] timer;
 wire [13:0] score;
 wire [13:0] high_score;
 wire [1:0] state;
 
+// Frame start signal
 assign frame_tick = bg_tvalid && bg_tready && bg_tuser[0];
 
 game_ctrl #(
 	.MAX_OBJ(MAX_OBJ),
 	.LANE_BITS(LANE_BITS),
-	.X_BIAS_BITS(X_BIAS_BITS),
+	.XOFF_BITS(XOFF_BITS),
 	.OBJ_TYPE_BITS(OBJ_TYPE_BITS),
 	.OBJ_Y_BITS(OBJ_Y_BITS)
 ) u_game_ctrl (
@@ -69,12 +70,12 @@ game_ctrl #(
 	.btn_start(btn_start),
 
 	.player_x(player_x),
-	.player_facing_right(player_facing_right),
+	.player_dir(player_dir),
 
-	.obj_active_bus(obj_active_bus),
+	.obj_valid_bus(obj_valid_bus),
 	.obj_lane_bus(obj_lane_bus),
-	.obj_x_bias_bus(obj_x_bias_bus),
-	.obj_y_bus(obj_y_bus),
+	.obj_xoff_bus(obj_xoff_bus),
+	.obj_ypos_bus(obj_ypos_bus),
 	.obj_type_bus(obj_type_bus),
 
 	.timer(timer),
@@ -87,7 +88,7 @@ bg_layer #(
 	`SVO_PASS_PARAMS,
 	.BG_SRC_X_BITS(5),
 	.BG_SRC_Y_BITS(5),
-	.BG_TILE_INIT_FILE("src/assets/background.mem")
+	.BG_TILE_FILE("src/assets/background.mem")
 ) u_bg_layer (
 	.clk(clk),
 	.resetn(resetn),
@@ -102,7 +103,7 @@ obj_layer #(
 	`SVO_PASS_PARAMS,
 	.MAX_OBJ(MAX_OBJ),
 	.LANE_BITS(LANE_BITS),
-	.X_BIAS_BITS(X_BIAS_BITS),
+	.XOFF_BITS(XOFF_BITS),
 	.OBJ_TYPE_BITS(OBJ_TYPE_BITS),
 	.OBJ_Y_BITS(OBJ_Y_BITS)
 ) u_obj_layer (
@@ -110,11 +111,11 @@ obj_layer #(
 	.resetn(resetn),
 
 	.player_x(player_x),
-	.player_facing_right(player_facing_right),
-	.obj_active_bus(obj_active_bus),
+	.player_dir(player_dir),
+	.obj_valid_bus(obj_valid_bus),
 	.obj_lane_bus(obj_lane_bus),
-	.obj_x_bias_bus(obj_x_bias_bus),
-	.obj_y_bus(obj_y_bus),
+	.obj_xoff_bus(obj_xoff_bus),
+	.obj_ypos_bus(obj_ypos_bus),
 	.obj_type_bus(obj_type_bus),
 
 	.in_axis_tvalid(bg_tvalid),

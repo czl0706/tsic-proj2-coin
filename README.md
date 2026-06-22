@@ -184,21 +184,29 @@ src/assets/player/player_right1_32.mem
 Per-object state:
 
 ```text
-obj_active
+obj_valid
 obj_lane
-obj_x_bias
-obj_y
+obj_xoff
+obj_ypos
 obj_type
 ```
 
 Coordinate formula:
 
 ```text
-obj_x = 64 + obj_lane * 32 + obj_x_bias
-obj_y = stored object y pixel coordinate
+obj_x = 64 + obj_lane * 32 + obj_xoff
+obj_ypos = stored object y pixel coordinate
 ```
 
-The multi-object values are exported as packed buses such as `obj_lane_bus`, `obj_y_bus`, and `obj_type_bus`.
+The multi-object values are exported as packed buses:
+
+```text
+obj_valid_bus
+obj_lane_bus
+obj_xoff_bus
+obj_ypos_bus
+obj_type_bus
+```
 
 Object assets:
 

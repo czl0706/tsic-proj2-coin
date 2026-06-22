@@ -37,15 +37,14 @@ localparam TIMER_X = 32;
 localparam SCORE_X = 263;
 localparam HIGH_SCORE_X = 494;
 
-localparam [23:0] UI_BG_RGB = 24'h181818;
-localparam [23:0] TIMER_RGB = 24'hE8E8E8;
-localparam [23:0] SCORE_RGB = 24'h20E0FF;
+localparam [23:0] UI_BG_RGB      = 24'h181818;
+localparam [23:0] TIMER_RGB      = 24'hE8E8E8;
+localparam [23:0] SCORE_RGB      = 24'h20E0FF;
 localparam [23:0] HIGH_SCORE_RGB = 24'hE8E8E8;
-localparam [23:0] INDICATOR_RGB = 24'h20FF40;
-localparam GAME_GAMEOVER = 2'd2;
+localparam [23:0] INDICATOR_RGB  = 24'h20FF40;
+localparam S_OVER = 2'd2;
 
-reg [`SVO_XYBITS-1:0] hcursor;
-reg [`SVO_XYBITS-1:0] vcursor;
+reg [`SVO_XYBITS-1:0] hcursor, vcursor;
 reg [4:0] blink_frame_count;
 reg blink_on;
 
@@ -53,23 +52,19 @@ wire fire = in_axis_tvalid && in_axis_tready;
 wire [`SVO_XYBITS-1:0] pixel_x = in_axis_tuser[0] ? 0 : hcursor;
 wire [`SVO_XYBITS-1:0] pixel_y = in_axis_tuser[0] ? 0 : vcursor;
 
-wire [9:0] timer_clamped = timer > 10'd999 ? 10'd999 : timer;
-wire [13:0] score_clamped = score > 14'd9999 ? 14'd9999 : score;
-wire [13:0] high_score_clamped = high_score > 14'd9999 ? 14'd9999 : high_score;
+wire [3:0] timer_d2 = timer / 10'd100;
+wire [3:0] timer_d1 = (timer / 10'd10) % 10'd10;
+wire [3:0] timer_d0 = timer % 10'd10;
 
-wire [3:0] timer_d2 = timer_clamped / 10'd100;
-wire [3:0] timer_d1 = (timer_clamped / 10'd10) % 10'd10;
-wire [3:0] timer_d0 = timer_clamped % 10'd10;
+wire [3:0] score_d3 = score / 14'd1000;
+wire [3:0] score_d2 = (score / 14'd100) % 14'd10;
+wire [3:0] score_d1 = (score / 14'd10) % 14'd10;
+wire [3:0] score_d0 = score % 14'd10;
 
-wire [3:0] score_d3 = score_clamped / 14'd1000;
-wire [3:0] score_d2 = (score_clamped / 14'd100) % 14'd10;
-wire [3:0] score_d1 = (score_clamped / 14'd10) % 14'd10;
-wire [3:0] score_d0 = score_clamped % 14'd10;
-
-wire [3:0] high_score_d3 = high_score_clamped / 14'd1000;
-wire [3:0] high_score_d2 = (high_score_clamped / 14'd100) % 14'd10;
-wire [3:0] high_score_d1 = (high_score_clamped / 14'd10) % 14'd10;
-wire [3:0] high_score_d0 = high_score_clamped % 14'd10;
+wire [3:0] high_score_d3 = high_score / 14'd1000;
+wire [3:0] high_score_d2 = (high_score / 14'd100) % 14'd10;
+wire [3:0] high_score_d1 = (high_score / 14'd10) % 14'd10;
+wire [3:0] high_score_d0 = high_score % 14'd10;
 
 function [6:0] digit_segments;
 	input [3:0] digit;
@@ -95,13 +90,7 @@ function digit_pixel;
 	input [5:0] x;
 	input [5:0] y;
 	reg [6:0] seg;
-	reg a;
-	reg b;
-	reg c;
-	reg d;
-	reg e;
-	reg f;
-	reg g;
+	reg a, b, c, d, e, f, g;
 	begin
 		seg = digit_segments(digit);
 
@@ -120,24 +109,24 @@ function digit_pixel;
 	end
 endfunction
 
-function group_pixel;
+function number_pixel;
 	input [`SVO_XYBITS-1:0] x;
 	input [`SVO_XYBITS-1:0] y;
-	input [`SVO_XYBITS-1:0] x0;
-	input [2:0] digit_count;
+	input [`SVO_XYBITS-1:0] number_x;
+	input [2:0] num_digits;
 	input [3:0] d0;
 	input [3:0] d1;
 	input [3:0] d2;
 	input [3:0] d3;
 	integer i;
 	reg [3:0] digit;
-	reg [`SVO_XYBITS-1:0] digit_x;
+	reg [`SVO_XYBITS-1:0] digit_left;
 	begin
-		group_pixel = 0;
+		number_pixel = 0;
 		if (y >= DIGIT_Y && y < DIGIT_Y + DIGIT_H) begin
 			for (i = 0; i < 4; i = i + 1) begin
-				if (i < digit_count) begin
-					digit_x = x0 + i * (DIGIT_W + DIGIT_GAP);
+				if (i < num_digits) begin
+					digit_left = number_x + i * (DIGIT_W + DIGIT_GAP);
 					case (i)
 						0: digit = d0;
 						1: digit = d1;
@@ -145,18 +134,18 @@ function group_pixel;
 						default: digit = d3;
 					endcase
 
-					if (x >= digit_x && x < digit_x + DIGIT_W)
-						group_pixel = digit_pixel(digit, x - digit_x, y - DIGIT_Y);
+					if (x >= digit_left && x < digit_left + DIGIT_W)
+						number_pixel = digit_pixel(digit, x - digit_left, y - DIGIT_Y);
 				end
 			end
 		end
 	end
 endfunction
 
-wire timer_pixel = group_pixel(pixel_x, pixel_y, TIMER_X, 3, timer_d2, timer_d1, timer_d0, 0);
-wire score_pixel = group_pixel(pixel_x, pixel_y, SCORE_X, 4, score_d3, score_d2, score_d1, score_d0);
-wire high_pixel = group_pixel(pixel_x, pixel_y, HIGH_SCORE_X, 4, high_score_d3, high_score_d2, high_score_d1, high_score_d0);
-wire show_score = state != GAME_GAMEOVER || blink_on;
+wire timer_pixel = number_pixel(pixel_x, pixel_y, TIMER_X, 3, timer_d2, timer_d1, timer_d0, 0);
+wire score_pixel = number_pixel(pixel_x, pixel_y, SCORE_X, 4, score_d3, score_d2, score_d1, score_d0);
+wire high_pixel = number_pixel(pixel_x, pixel_y, HIGH_SCORE_X, 4, high_score_d3, high_score_d2, high_score_d1, high_score_d0);
+wire show_score = state != S_OVER || blink_on;
 wire ui_region = pixel_y >= UI_TOP;
 wire left_indicator = btn_left && pixel_y >= UI_TOP + 8 && pixel_y < UI_TOP + 56 &&
 						pixel_x >= 4 && pixel_x < 20;
@@ -176,23 +165,28 @@ assign out_axis_tdata = left_indicator ? INDICATOR_RGB :
 
 always @(posedge clk) begin
 	if (!resetn) begin
-		hcursor <= 0;
-		vcursor <= 0;
 		blink_frame_count <= 0;
 		blink_on <= 1'b1;
 	end else if (fire) begin
-		if (in_axis_tuser[0] && state == GAME_GAMEOVER) begin
+		if (in_axis_tuser[0] && state == S_OVER) begin
 			if (blink_frame_count == 5'd29) begin
 				blink_frame_count <= 5'd0;
 				blink_on <= !blink_on;
 			end else begin
 				blink_frame_count <= blink_frame_count + 1'b1;
 			end
-		end else if (state != GAME_GAMEOVER) begin
+		end else if (state != S_OVER) begin
 			blink_frame_count <= 5'd0;
 			blink_on <= 1'b1;
 		end
+	end
+end
 
+always @(posedge clk) begin
+	if (!resetn) begin
+		hcursor <= 0;
+		vcursor <= 0;
+	end else if (fire) begin
 		if (in_axis_tuser[0]) begin
 			hcursor <= 1;
 			vcursor <= 0;

@@ -10,7 +10,7 @@ module spawn_queue #(
 	input wire enable,
 
 	input wire pop,
-	output wire [9:0] packet,
+	output wire [9:0] spawn_data,
 	output wire empty,
 
 	output wire full,
@@ -22,25 +22,21 @@ localparam TYPE_COIN_5 = 2;
 localparam TYPE_MINUS5 = 3;
 
 wire [31:0] rnd;
-wire [3:0] candidate_lane = rnd[3:0];
-wire [3:0] candidate_x_bias = rnd[7:4];
-wire [6:0] candidate_pct = rnd[14:8];
-reg [1:0] candidate_type;
+wire [3:0] cand_lane = rnd[ 3:0];
+wire [3:0] cand_xoff = rnd[ 7:4];
+wire [6:0] cand_pct  = rnd[14:8];
+reg [1:0] cand_type;
 
-wire pct_valid = candidate_pct < 100;
+wire pct_valid = cand_pct < 100;
 wire lfsr_en = enable && !full;
 wire fifo_wr_en = enable && !full && pct_valid;
-wire [9:0] fifo_wr_data = {candidate_lane, candidate_x_bias, candidate_type};
+wire [9:0] fifo_wr_data = {cand_lane, cand_xoff, cand_type};
 
 always @(*) begin
-	if (candidate_pct < 50)
-		candidate_type = TYPE_COIN_1;
-	else if (candidate_pct < 75)
-		candidate_type = TYPE_COIN_3;
-	else if (candidate_pct < 90)
-		candidate_type = TYPE_COIN_5;
-	else
-		candidate_type = TYPE_MINUS5;
+	     if (cand_pct < 50) cand_type = TYPE_COIN_1;
+	else if (cand_pct < 75) cand_type = TYPE_COIN_3;
+	else if (cand_pct < 90) cand_type = TYPE_COIN_5;
+	else                    cand_type = TYPE_MINUS5;
 end
 
 lfsr32 #(
@@ -62,7 +58,7 @@ fifo #(
 	.wr_data(fifo_wr_data),
 	.full(full),
 	.rd_en(pop),
-	.rd_data(packet),
+	.rd_data(spawn_data),
 	.empty(empty),
 	.level(level)
 );
