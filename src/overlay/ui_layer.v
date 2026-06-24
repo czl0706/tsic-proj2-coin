@@ -79,8 +79,9 @@ wire [3:0] high_score_d3 = high_score / 14'd1000;
 wire [3:0] high_score_d2 = (high_score / 14'd100) % 14'd10;
 wire [3:0] high_score_d1 = (high_score / 14'd10) % 14'd10;
 wire [3:0] high_score_d0 = high_score % 14'd10;
-wire [3:0] skill_timer_d1 = (skill_timer / 8'd10) % 8'd10;
-wire [3:0] skill_timer_d0 = skill_timer % 8'd10;
+wire skill_timer_ge_10 = skill_timer >= 10;
+wire [3:0] skill_timer_d1 = skill_timer_ge_10 ? 1 : 0;
+wire [3:0] skill_timer_d0 = skill_timer_ge_10 ? skill_timer - 10 : skill_timer[3:0];
 
 function [6:0] digit_seg;
 	input [3:0] digit;
