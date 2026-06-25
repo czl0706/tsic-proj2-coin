@@ -208,11 +208,11 @@ src/assets/player/player_right1_32.mem
 Object type probability:
 
 ```text
-+1      30%
++1      20%
 +3      20%
 +5      10%
--3      15%
--5      10%
+-3      20%
+-5      15%
 +time    5%
 charge  10%
 ```
