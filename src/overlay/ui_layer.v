@@ -8,9 +8,9 @@ module ui_layer #(
 	input clk,
 	input resetn,
 
-	input [9:0] timer,
-	input [13:0] score,
-	input [13:0] high_score,
+	input [7:0] timer,
+	input [9:0] score,
+	input [9:0] high_score,
 	input [2:0] skill_charge,
 	input [7:0] skill_timer,
 	input game_over,
@@ -69,19 +69,17 @@ wire fire = in_axis_tvalid && in_axis_tready;
 wire [`SVO_XYBITS-1:0] pixel_x = in_axis_tuser[0] ? 0 : hcursor;
 wire [`SVO_XYBITS-1:0] pixel_y = in_axis_tuser[0] ? 0 : vcursor;
 
-wire [3:0] timer_d2 = timer / 10'd100;
-wire [3:0] timer_d1 = (timer / 10'd10) % 10'd10;
-wire [3:0] timer_d0 = timer % 10'd10;
+wire [3:0] timer_d2 = timer / 8'd100;
+wire [3:0] timer_d1 = (timer / 8'd10) % 8'd10;
+wire [3:0] timer_d0 = timer % 8'd10;
 
-wire [3:0] score_d3 = score / 14'd1000;
-wire [3:0] score_d2 = (score / 14'd100) % 14'd10;
-wire [3:0] score_d1 = (score / 14'd10) % 14'd10;
-wire [3:0] score_d0 = score % 14'd10;
+wire [3:0] score_d2 = score / 10'd100;
+wire [3:0] score_d1 = (score / 10'd10) % 10'd10;
+wire [3:0] score_d0 = score % 10'd10;
 
-wire [3:0] high_score_d3 = high_score / 14'd1000;
-wire [3:0] high_score_d2 = (high_score / 14'd100) % 14'd10;
-wire [3:0] high_score_d1 = (high_score / 14'd10) % 14'd10;
-wire [3:0] high_score_d0 = high_score % 14'd10;
+wire [3:0] high_score_d2 = high_score / 10'd100;
+wire [3:0] high_score_d1 = (high_score / 10'd10) % 10'd10;
+wire [3:0] high_score_d0 = high_score % 10'd10;
 wire skill_timer_ge_10 = skill_timer >= 10;
 wire [3:0] skill_timer_d1 = skill_timer_ge_10 ? 1 : 0;
 wire [3:0] skill_timer_d0 = skill_timer_ge_10 ? skill_timer - 10 : skill_timer[3:0];
@@ -244,8 +242,8 @@ function small_number_pixel;
 endfunction
 
 wire timer_pixel = number_pixel(pixel_x, pixel_y, TIMER_X, 3, timer_d2, timer_d1, timer_d0, 0);
-wire score_pixel = number_pixel(pixel_x, pixel_y, SCORE_X, 4, score_d3, score_d2, score_d1, score_d0);
-wire high_score_pixel = number_pixel(pixel_x, pixel_y, HIGH_SCORE_X, 4, high_score_d3, high_score_d2, high_score_d1, high_score_d0);
+wire score_pixel = number_pixel(pixel_x, pixel_y, SCORE_X, 3, score_d2, score_d1, score_d0, 0);
+wire high_score_pixel = number_pixel(pixel_x, pixel_y, HIGH_SCORE_X, 3, high_score_d2, high_score_d1, high_score_d0, 0);
 wire skill_timer_on = SKILL_ENABLE && (skill_timer != 0);
 wire skill_timer_pixel = skill_timer_on && small_number_pixel(pixel_x, pixel_y, SKILL_TIME_X, skill_timer_d1, skill_timer_d0);
 wire score_on = !game_over || blink_on;

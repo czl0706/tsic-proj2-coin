@@ -21,10 +21,11 @@
     parameter HIGH_SCORE_START = 0
  )(
     input clk,
-@@ -83,7 +84,8 @@
+@@ -83,8 +84,9 @@
  wire pause;
  wire skill_on;
  wire skill_start;
+ wire skill_btn_active = btn_skill && state == S_PLAY && !pause;
 -wire can_left = player_x > player_speed;
 -wire can_right = player_x + player_speed < PLAYER_MAX_X;
 +wire [5:0] player_speed_eff = skill_on ? SPEED_BOOST_VALUE : player_speed;

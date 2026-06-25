@@ -32,5 +32,5 @@
 +wire [10:0] hit_player_r = skill_on ?
 +                            player_x + PLAYER_WIDTH + MAGNET_PAD :
 +                            player_x + PLAYER_WIDTH;
- wire [10:0] hit_player_t = PLAYER_Y;
+ wire [10:0] hit_player_t = PLAYER_Y + PLAYER_HIT_TOP_PAD;
  wire [10:0] hit_player_b = PLAYER_Y + PLAYER_HEIGHT;

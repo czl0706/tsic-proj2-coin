@@ -10,6 +10,7 @@ module game_ctrl #(
 	parameter SPAWN_PERIOD_FRAMES = 24,
 	parameter PLAYER_WIDTH = 64,
 	parameter PLAYER_HEIGHT = 64,
+	parameter PLAYER_HIT_TOP_PAD = 16,
 	parameter PLAYER_START_X = 288,
 	parameter PLAYER_SPEED_START = 8,
 	parameter TIMER_START = 60,
@@ -40,9 +41,9 @@ module game_ctrl #(
 	output reg [MAX_OBJ*OBJ_Y_BITS   -1:0] obj_ypos_bus,
 	output reg [MAX_OBJ*OBJ_TYPE_BITS-1:0] obj_type_bus,
 
-	output reg [9:0] timer,
-	output reg [13:0] score,
-	output reg [13:0] high_score,
+	output reg [7:0] timer,
+	output reg [9:0] score,
+	output reg [9:0] high_score,
 	output reg [2:0] skill_charge,
 	output [7:0] skill_timer,
 	output game_over
@@ -83,6 +84,7 @@ wire btn_start_rise = btn_start && !btn_start_q;
 wire pause;
 wire skill_on;
 wire skill_start;
+wire skill_btn_active = btn_skill && state == S_PLAY && !pause;
 wire can_left = player_x > player_speed;
 wire can_right = player_x + player_speed < PLAYER_MAX_X;
 
@@ -107,7 +109,7 @@ skill_slot #(
 	.resetn(resetn),
 	.tick(frame_tick && state == S_PLAY && !pause),
 	.restart(btn_start_rise),
-	.btn_skill(btn_skill),
+	.btn_skill(skill_btn_active),
 	.skill_charge(skill_charge),
 	.skill_timer(skill_timer),
 	.skill_on(skill_on),
@@ -152,7 +154,7 @@ reg [4:0] hit_idx;
 reg [9:0] hit_obj_x;
 wire [10:0] hit_player_l = player_x;
 wire [10:0] hit_player_r = player_x + PLAYER_WIDTH;
-wire [10:0] hit_player_t = PLAYER_Y;
+wire [10:0] hit_player_t = PLAYER_Y + PLAYER_HIT_TOP_PAD;
 wire [10:0] hit_player_b = PLAYER_Y + PLAYER_HEIGHT;
 
 function [9:0] obj_x;
@@ -183,12 +185,12 @@ wire ground_valid = (obj_count != 0) && (obj_ypos[0] >= OBJ_GROUND_Y);
 assign remove_valid = hit_valid || ground_valid;
 wire [4:0] remove_idx = hit_valid ? hit_idx : 0;
 
-reg [13:0] next_score;
-reg [9:0] next_timer;
+reg [9:0] next_score;
+reg [7:0] next_timer;
 reg [2:0] next_charge;
 reg signed [5:0] score_delta;
-reg signed [15:0] score_sum;
-wire [13:0] final_score = hit_valid ? next_score : score;
+reg signed [10:0] score_sum;
+wire [9:0] final_score = hit_valid ? next_score : score;
 
 always @(*) begin
 	next_score = score;
@@ -218,7 +220,7 @@ always @(*) begin
 		if (score_sum < 0)
 			next_score = 0;
 		else
-			next_score = score_sum[13:0];
+			next_score = score_sum[9:0];
 	end
 end
 
@@ -313,9 +315,6 @@ always @(posedge clk) begin
 					skill_charge <= next_charge;
 				end
 
-				if (SKILL_ENABLE && skill_start)
-					skill_charge <= 0;
-
 				// Object falling and spawning
 				if (remove_valid) begin
 					for (i = 0; i < MAX_OBJ-1; i = i + 1) begin
@@ -376,6 +375,9 @@ always @(posedge clk) begin
 				end
 			end
 		end
+
+		if (SKILL_ENABLE && skill_start)
+			skill_charge <= 0;
 	end
 end
 endmodule

@@ -21,9 +21,10 @@
     parameter HIGH_SCORE_START = 0
  )(
     input clk,
-@@ -84,4 +85,5 @@
+@@ -84,5 +85,6 @@
  wire skill_on;
  wire skill_start;
+ wire skill_btn_active = btn_skill && state == S_PLAY && !pause;
 +wire [7:0] spawn_period_eff = skill_on ? STAR_SPAWN_PERIOD : spawn_period;
  wire can_left = player_x > player_speed;
  wire can_right = player_x + player_speed < PLAYER_MAX_X;

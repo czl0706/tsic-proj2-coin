@@ -14,12 +14,12 @@
 --- a/src/game/game_ctrl.v
 +++ b/src/game/game_ctrl.v
 @@ -187,5 +187,6 @@
- reg [9:0] next_timer;
+ reg [7:0] next_timer;
  reg [2:0] next_charge;
  reg signed [5:0] score_delta;
 +reg signed [5:0] score_delta_eff;
- reg signed [15:0] score_sum;
- wire [13:0] final_score = hit_valid ? next_score : score;
+ reg signed [10:0] score_sum;
+ wire [9:0] final_score = hit_valid ? next_score : score;
 @@ -196,4 +197,5 @@
     next_timer = timer;
     next_charge = skill_charge;

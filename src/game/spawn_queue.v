@@ -38,10 +38,10 @@ wire fifo_wr_en = cand_next && cand_valid;
 wire [10:0] fifo_wr_data = {cand_lane, cand_xoff, cand_type};
 
 always @(*) begin
-	     if (cand_pct < 30) cand_type = TYPE_COIN_1;
-	else if (cand_pct < 50) cand_type = TYPE_COIN_3;
-	else if (cand_pct < 60) cand_type = TYPE_COIN_5;
-	else if (cand_pct < 75) cand_type = TYPE_MINUS3;
+	     if (cand_pct < 20) cand_type = TYPE_COIN_1;
+	else if (cand_pct < 40) cand_type = TYPE_COIN_3;
+	else if (cand_pct < 50) cand_type = TYPE_COIN_5;
+	else if (cand_pct < 70) cand_type = TYPE_MINUS3;
 	else if (cand_pct < 85) cand_type = TYPE_MINUS5;
 	else if (cand_pct < 90) cand_type = TYPE_TIME;
 	else                    cand_type = TYPE_CHARGE;
