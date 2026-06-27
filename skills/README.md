@@ -21,7 +21,7 @@ git apply --ignore-whitespace .\skills\patches\magnet.patch
 Build the project:
 
 ```powershell
-.\run.ps1
+.\.vscode\run.ps1
 ```
 
 The generated bitstream is under:
@@ -44,10 +44,10 @@ skills\patches\star_rain.patch
 
 ## Batch Build All Skills
 
-To build every skill patch and place only the `.fs` files in `fs\`:
+To build every skill patch and place only the `.fs` files in `skills\fs\`:
 
 ```powershell
-.\fs\run_all_patches.ps1
+.\skills\run_all_patches.ps1
 ```
 
 This script builds each patch in a temporary git worktree. It does not apply the

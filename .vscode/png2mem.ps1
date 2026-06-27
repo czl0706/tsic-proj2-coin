@@ -1,9 +1,11 @@
 param(
     [string]$InputDir = "png",
-    [string]$OutputDir = "mem"
+    [string]$OutputDir = "src\assets"
 )
 
 Add-Type -AssemblyName System.Drawing
+
+$ROOT = Split-Path -Parent $PSScriptRoot
 
 function Resolve-LocalPath {
     param([string]$PathValue)
@@ -12,7 +14,7 @@ function Resolve-LocalPath {
         return $PathValue
     }
 
-    return Join-Path $PSScriptRoot $PathValue
+    return Join-Path $ROOT $PathValue
 }
 
 $InputPath = Resolve-LocalPath $InputDir

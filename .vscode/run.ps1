@@ -5,7 +5,7 @@ $PROGRAMMER = "$GOWIN_HOME\Programmer\bin\programmer_cli.exe"
 
 $DEVICE_NAME = "GW1NSR-4C"
 
-$ROOT = $PSScriptRoot
+$ROOT = Split-Path -Parent $PSScriptRoot
 $PROJECT_FILE = $null
 
 foreach ($CANDIDATE in @("hdmi_coin.prj", "hdmi_coin.gprj")) {

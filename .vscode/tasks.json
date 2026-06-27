@@ -10,7 +10,7 @@
         "-ExecutionPolicy",
         "Bypass",
         "-File",
-        "${workspaceFolder}\\run.ps1"
+        "${workspaceFolder}\\.vscode\\run.ps1"
       ],
       "options": {
         "cwd": "${workspaceFolder}"
@@ -35,7 +35,7 @@
         "-ExecutionPolicy",
         "Bypass",
         "-File",
-        "${workspaceFolder}\\png2mem\\png2mem.ps1"
+        "${workspaceFolder}\\.vscode\\png2mem.ps1"
       ],
       "options": {
         "cwd": "${workspaceFolder}"

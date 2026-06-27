@@ -8,7 +8,7 @@ $GW_SH = "$GOWIN_HOME\IDE\bin\gw_sh.exe"
 
 $RepoRoot = $PSScriptRoot | Split-Path -Parent
 $PatchDir = Join-Path $RepoRoot "skills\patches"
-$FsDir = Join-Path $RepoRoot "fs"
+$FsDir = Join-Path $RepoRoot "skills\fs"
 $Timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
 
 Set-Location $RepoRoot
@@ -33,7 +33,7 @@ if ($PatchFiles.Count -eq 0) {
     exit 1
 }
 
-$BaseDiffArgs = @("diff", "HEAD", "--", ".", ":(exclude)skills/patches", ":(exclude)bin", ":(exclude)fs")
+$BaseDiffArgs = @("diff", "HEAD", "--", ".", ":(exclude)skills/patches", ":(exclude)skills/fs", ":(exclude)bin", ":(exclude)fs")
 $BaseDiff = @(& git @BaseDiffArgs)
 if ($LASTEXITCODE -ne 0) {
     Write-Host "Failed to read base working tree diff."
@@ -173,7 +173,7 @@ foreach ($Patch in $PatchFiles) {
 Write-Host ""
 Write-Host "Generated .fs files:"
 foreach ($BuiltFile in $BuiltFiles) {
-    Write-Host "  fs\$BuiltFile"
+    Write-Host "  skills\fs\$BuiltFile"
 }
 
 if ($Failures.Count -gt 0) {

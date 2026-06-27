@@ -222,7 +222,7 @@ rom #(
 	.DATA_WIDTH(16),
 	.ADDR_WIDTH(OBJ_ADDR_WIDTH),
 	.DEPTH(256),
-	.INIT_FILE("src/assets/objects/obj_plus1_16.mem")
+	.INIT_FILE("src/assets/obj_plus1_16.mem")
 ) u_obj_plus1_rom (
 	.clk(clk),
 	.addr(obj_addr),
@@ -233,7 +233,7 @@ rom #(
 	.DATA_WIDTH(16),
 	.ADDR_WIDTH(OBJ_ADDR_WIDTH),
 	.DEPTH(256),
-	.INIT_FILE("src/assets/objects/obj_plus3_16.mem")
+	.INIT_FILE("src/assets/obj_plus3_16.mem")
 ) u_obj_plus3_rom (
 	.clk(clk),
 	.addr(obj_addr),
@@ -244,7 +244,7 @@ rom #(
 	.DATA_WIDTH(16),
 	.ADDR_WIDTH(OBJ_ADDR_WIDTH),
 	.DEPTH(256),
-	.INIT_FILE("src/assets/objects/obj_plus5_16.mem")
+	.INIT_FILE("src/assets/obj_plus5_16.mem")
 ) u_obj_plus5_rom (
 	.clk(clk),
 	.addr(obj_addr),
@@ -255,7 +255,7 @@ rom #(
 	.DATA_WIDTH(16),
 	.ADDR_WIDTH(OBJ_ADDR_WIDTH),
 	.DEPTH(256),
-	.INIT_FILE("src/assets/objects/obj_minus3_16.mem")
+	.INIT_FILE("src/assets/obj_minus3_16.mem")
 ) u_obj_minus3_rom (
 	.clk(clk),
 	.addr(obj_addr),
@@ -266,7 +266,7 @@ rom #(
 	.DATA_WIDTH(16),
 	.ADDR_WIDTH(OBJ_ADDR_WIDTH),
 	.DEPTH(256),
-	.INIT_FILE("src/assets/objects/obj_minus5_16.mem")
+	.INIT_FILE("src/assets/obj_minus5_16.mem")
 ) u_obj_minus5_rom (
 	.clk(clk),
 	.addr(obj_addr),
@@ -277,7 +277,7 @@ rom #(
 	.DATA_WIDTH(16),
 	.ADDR_WIDTH(OBJ_ADDR_WIDTH),
 	.DEPTH(256),
-	.INIT_FILE("src/assets/objects/obj_time_16.mem")
+	.INIT_FILE("src/assets/obj_time_16.mem")
 ) u_obj_time_rom (
 	.clk(clk),
 	.addr(obj_addr),
@@ -288,7 +288,7 @@ rom #(
 	.DATA_WIDTH(16),
 	.ADDR_WIDTH(OBJ_ADDR_WIDTH),
 	.DEPTH(256),
-	.INIT_FILE("src/assets/objects/obj_charge_16.mem")
+	.INIT_FILE("src/assets/obj_charge_16.mem")
 ) u_obj_charge_rom (
 	.clk(clk),
 	.addr(obj_addr),
@@ -299,7 +299,7 @@ rom #(
 	.DATA_WIDTH(16),
 	.ADDR_WIDTH(PLAYER_SRC_ADDR_WIDTH),
 	.DEPTH(1024),
-	.INIT_FILE("src/assets/player/player_left1_32.mem")
+	.INIT_FILE("src/assets/player_left1_32.mem")
 ) u_player_left_rom (
 	.clk(clk),
 	.addr(player_addr),
@@ -310,7 +310,7 @@ rom #(
 	.DATA_WIDTH(16),
 	.ADDR_WIDTH(PLAYER_SRC_ADDR_WIDTH),
 	.DEPTH(1024),
-	.INIT_FILE("src/assets/player/player_right1_32.mem")
+	.INIT_FILE("src/assets/player_right1_32.mem")
 ) u_player_right_rom (
 	.clk(clk),
 	.addr(player_addr),

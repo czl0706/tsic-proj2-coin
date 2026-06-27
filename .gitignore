@@ -1,3 +1,4 @@
 impl/
-fs/*.fs
+skills/fs/*.fs
 *.user
+.agents

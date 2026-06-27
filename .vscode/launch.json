@@ -6,7 +6,7 @@
       "type": "node-terminal",
       "request": "launch",
       "preLaunchTask": "run",
-      "command": "echo run.ps1 completed.",
+      "command": "echo .vscode/run.ps1 completed.",
       "cwd": "${workspaceFolder}"
     }
   ]

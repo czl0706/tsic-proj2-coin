@@ -31,23 +31,23 @@ top
 hdmi_coin/
 |-- README.md
 |-- hdmi_coin.gprj
-|-- run.ps1
 |-- skills/
 |   |-- double_score.md
 |   |-- gambler.md
 |   |-- invincible_1.md
 |   |-- invincible_2.md
 |   |-- magnet.md
+|   |-- fs/
 |   |-- patches/
+|   |-- run_all_patches.ps1
 |   |-- speed_boost.md
 |   `-- star_rain.md
 |-- .vscode/
+|   |-- launch.json
 |   |-- tasks.json
-|   `-- launch.json
-|-- png2mem/
-|   |-- png2mem.ps1
-|   |-- png/
-|   `-- mem/
+|   |-- run.ps1
+|   `-- png2mem.ps1
+|-- png/
 `-- src/
     |-- top.v
     |-- hdmi_coin.cst
@@ -191,8 +191,8 @@ Negative score clamps at 0.
 Player assets:
 
 ```text
-src/assets/player/player_left1_32.mem
-src/assets/player/player_right1_32.mem
+src/assets/player_left1_32.mem
+src/assets/player_right1_32.mem
 ```
 
 ### Objects
@@ -249,13 +249,13 @@ obj_type_bus
 Object assets:
 
 ```text
-src/assets/objects/obj_plus1_16.mem
-src/assets/objects/obj_plus3_16.mem
-src/assets/objects/obj_plus5_16.mem
-src/assets/objects/obj_minus3_16.mem
-src/assets/objects/obj_minus5_16.mem
-src/assets/objects/obj_time_16.mem
-src/assets/objects/obj_charge_16.mem
+src/assets/obj_plus1_16.mem
+src/assets/obj_plus3_16.mem
+src/assets/obj_plus5_16.mem
+src/assets/obj_minus3_16.mem
+src/assets/obj_minus5_16.mem
+src/assets/obj_time_16.mem
+src/assets/obj_charge_16.mem
 ```
 
 ## Render Layers
@@ -395,25 +395,25 @@ The render layers convert RGB565 ROM output to BGR888 for the SVO video stream.
 
 ## PNG to MEM
 
-`png2mem/png2mem.ps1` converts all PNG files in an input folder to RGB565 `.mem` files.
+`.vscode/png2mem.ps1` converts all PNG files in an input folder to RGB565 `.mem` files.
 
 Default behavior:
 
 ```text
-input : png2mem/png
-output: png2mem/mem
+input : png/
+output: src/assets
 ```
 
 Run from PowerShell:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\png2mem\png2mem.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File .\.vscode\png2mem.ps1
 ```
 
 Custom folders:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\png2mem\png2mem.ps1 .\src\assets\objects .\src\assets\objects
+powershell -NoProfile -ExecutionPolicy Bypass -File .\.vscode\png2mem.ps1 .\src\assets\objects .\src\assets\objects
 ```
 
 The script only writes `.mem` files. It does not generate `assets.vh`, `assets.json`, or alpha map files.
@@ -426,7 +426,7 @@ Available tasks:
 
 ```text
 run      build and upload through Gowin
-png2mem  convert PNG files under png2mem/png to RGB565 MEM files
+png2mem  convert PNG files under png/ to RGB565 MEM files in src/assets/
 ```
 
 Use:
@@ -440,7 +440,7 @@ Terminal -> Run Task... -> png2mem
 
 ## Build and Upload
 
-`run.ps1` does:
+`.vscode/run.ps1` does:
 
 1. Open `hdmi_coin.prj` if it exists, otherwise `hdmi_coin.gprj`.
 2. Run Gowin build.
@@ -453,7 +453,7 @@ Expected Gowin install path in the current script:
 C:\Gowin\Gowin_V1.9.11.03_Education_x64
 ```
 
-If your Gowin installation path is different, update `$GOWIN_HOME` in `run.ps1`.
+If your Gowin installation path is different, update `$GOWIN_HOME` in `.vscode/run.ps1`.
 
 ## Development Notes
 
