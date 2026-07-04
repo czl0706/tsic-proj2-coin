@@ -9,8 +9,8 @@ module game_core #(
 	parameter SVO_BITS_PER_GREEN   =    8,
 	parameter SVO_BITS_PER_BLUE    =    8,
 	parameter SVO_BITS_PER_ALPHA   =    0,
-	parameter SKILL_ENABLE         =    0,
-	parameter SKILL_DURATION       =    0
+	parameter SKILL_ENABLE         =    1,
+	parameter SKILL_DURATION       =    10
 ) (
 	input clk,
 	input resetn,
