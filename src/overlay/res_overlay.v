@@ -29,17 +29,32 @@ localparam [9:0] PANEL_Y0 = 10'd128;
 localparam [9:0] PANEL_Y1 = 10'd352;
 localparam [9:0] BORDER_T = 10'd4;
 
-localparam [9:0] TITLE_X = 10'd224;
-localparam [9:0] TITLE_Y = 10'd152;
-localparam [9:0] SCORE_LABEL_X = 10'd176;
-localparam [9:0] SCORE_Y = 10'd224;
-localparam [9:0] BEST_LABEL_X = 10'd176;
-localparam [9:0] BEST_Y = 10'd272;
-localparam [9:0] VALUE_X = 10'd352;
+// Text layout. All glyphs come from the shared 6x12 res_font ROM and are
+// scaled by power-of-2 replication (title/value x4 -> 24x48, labels x2 -> 12x24).
+localparam [9:0] TITLE_X       = 10'd222;
+localparam [9:0] TITLE_Y       = 10'd140;
+localparam [9:0] TITLE_STRIDE  = 10'd28;   // (6+1) * 4
+localparam [9:0] TITLE_GW      = 10'd24;   // 6 * 4
 
-localparam TEXT_TIME_UP = 0;
-localparam TEXT_SCORE = 1;
-localparam TEXT_BEST = 2;
+localparam [9:0] LABEL_STRIDE  = 10'd14;   // (6+1) * 2
+localparam [9:0] LABEL_GW      = 10'd12;   // 6 * 2
+localparam [9:0] SCORE_LABEL_X = 10'd152;
+localparam [9:0] SCORE_LABEL_Y = 10'd228;
+localparam [9:0] BEST_LABEL_X  = 10'd152;
+localparam [9:0] BEST_LABEL_Y  = 10'd300;
+
+localparam [9:0] VALUE_X       = 10'd300;
+localparam [9:0] VAL_STRIDE    = 10'd32;   // (6+2) * 4
+localparam [9:0] VAL_GW        = 10'd24;   // 6 * 4
+localparam [9:0] SCORE_VAL_Y   = 10'd216;
+localparam [9:0] BEST_VAL_Y    = 10'd288;
+
+// combined-font glyph indices (see .vscode/bitmap2mem.ps1)
+localparam GLYPH_SPACE = 5'd10;
+
+localparam [1:0] TXT_TITLE = 2'd0;
+localparam [1:0] TXT_SCORE = 2'd1;
+localparam [1:0] TXT_BEST  = 2'd2;
 
 localparam [23:0] COLOR_PANEL  = 24'h000000;
 localparam [23:0] COLOR_BORDER = 24'hFFFFFF;
@@ -77,361 +92,230 @@ function [23:0] dim_bgr888;
 	end
 endfunction
 
-function [4:0] font_row;
-	input [5:0] ch;
-	input [2:0] row;
+// Map a text string + char position to a combined-font glyph index.
+function [4:0] text_glyph;
+	input [1:0] tid;
+	input [2:0] idx;
 	begin
-		case (ch)
-			6'd0: begin // space
-				font_row = 5'b00000;
-			end
-			6'd1: begin // A
-				case (row)
-					0: font_row = 5'b01110;
-					1: font_row = 5'b10001;
-					2: font_row = 5'b10001;
-					3: font_row = 5'b11111;
-					4: font_row = 5'b10001;
-					5: font_row = 5'b10001;
-					default: font_row = 5'b10001;
-				endcase
-			end
-			6'd2: begin // B
-				case (row)
-					0: font_row = 5'b11110;
-					1: font_row = 5'b10001;
-					2: font_row = 5'b10001;
-					3: font_row = 5'b11110;
-					4: font_row = 5'b10001;
-					5: font_row = 5'b10001;
-					default: font_row = 5'b11110;
-				endcase
-			end
-			6'd3: begin // C
-				case (row)
-					0: font_row = 5'b01111;
-					1: font_row = 5'b10000;
-					2: font_row = 5'b10000;
-					3: font_row = 5'b10000;
-					4: font_row = 5'b10000;
-					5: font_row = 5'b10000;
-					default: font_row = 5'b01111;
-				endcase
-			end
-			6'd4: begin // E
-				case (row)
-					0: font_row = 5'b11111;
-					1: font_row = 5'b10000;
-					2: font_row = 5'b10000;
-					3: font_row = 5'b11110;
-					4: font_row = 5'b10000;
-					5: font_row = 5'b10000;
-					default: font_row = 5'b11111;
-				endcase
-			end
-			6'd5: begin // I
-				case (row)
-					0: font_row = 5'b11111;
-					1: font_row = 5'b00100;
-					2: font_row = 5'b00100;
-					3: font_row = 5'b00100;
-					4: font_row = 5'b00100;
-					5: font_row = 5'b00100;
-					default: font_row = 5'b11111;
-				endcase
-			end
-			6'd6: begin // M
-				case (row)
-					0: font_row = 5'b10001;
-					1: font_row = 5'b11011;
-					2: font_row = 5'b10101;
-					3: font_row = 5'b10001;
-					4: font_row = 5'b10001;
-					5: font_row = 5'b10001;
-					default: font_row = 5'b10001;
-				endcase
-			end
-			6'd7: begin // O
-				case (row)
-					0: font_row = 5'b01110;
-					1: font_row = 5'b10001;
-					2: font_row = 5'b10001;
-					3: font_row = 5'b10001;
-					4: font_row = 5'b10001;
-					5: font_row = 5'b10001;
-					default: font_row = 5'b01110;
-				endcase
-			end
-			6'd8: begin // P
-				case (row)
-					0: font_row = 5'b11110;
-					1: font_row = 5'b10001;
-					2: font_row = 5'b10001;
-					3: font_row = 5'b11110;
-					4: font_row = 5'b10000;
-					5: font_row = 5'b10000;
-					default: font_row = 5'b10000;
-				endcase
-			end
-			6'd9: begin // R
-				case (row)
-					0: font_row = 5'b11110;
-					1: font_row = 5'b10001;
-					2: font_row = 5'b10001;
-					3: font_row = 5'b11110;
-					4: font_row = 5'b10100;
-					5: font_row = 5'b10010;
-					default: font_row = 5'b10001;
-				endcase
-			end
-			6'd10: begin // S
-				case (row)
-					0: font_row = 5'b01111;
-					1: font_row = 5'b10000;
-					2: font_row = 5'b10000;
-					3: font_row = 5'b01110;
-					4: font_row = 5'b00001;
-					5: font_row = 5'b00001;
-					default: font_row = 5'b11110;
-				endcase
-			end
-			6'd11: begin // T
-				case (row)
-					0: font_row = 5'b11111;
-					1: font_row = 5'b00100;
-					2: font_row = 5'b00100;
-					3: font_row = 5'b00100;
-					4: font_row = 5'b00100;
-					5: font_row = 5'b00100;
-					default: font_row = 5'b00100;
-				endcase
-			end
-			6'd12: begin // U
-				case (row)
-					0: font_row = 5'b10001;
-					1: font_row = 5'b10001;
-					2: font_row = 5'b10001;
-					3: font_row = 5'b10001;
-					4: font_row = 5'b10001;
-					5: font_row = 5'b10001;
-					default: font_row = 5'b01110;
-				endcase
-			end
-			default: font_row = 5'b00000;
+		text_glyph = GLYPH_SPACE;
+		case (tid)
+			TXT_TITLE: case (idx)          // "TIME UP"
+				0: text_glyph = 5'd20;     // T
+				1: text_glyph = 5'd14;     // I
+				2: text_glyph = 5'd15;     // M
+				3: text_glyph = 5'd13;     // E
+				4: text_glyph = GLYPH_SPACE;
+				5: text_glyph = 5'd21;     // U
+				6: text_glyph = 5'd17;     // P
+				default: text_glyph = GLYPH_SPACE;
+			endcase
+			TXT_SCORE: case (idx)          // "SCORE"
+				0: text_glyph = 5'd19;     // S
+				1: text_glyph = 5'd12;     // C
+				2: text_glyph = 5'd16;     // O
+				3: text_glyph = 5'd18;     // R
+				4: text_glyph = 5'd13;     // E
+				default: text_glyph = GLYPH_SPACE;
+			endcase
+			TXT_BEST: case (idx)           // "BEST"
+				0: text_glyph = 5'd11;     // B
+				1: text_glyph = 5'd13;     // E
+				2: text_glyph = 5'd19;     // S
+				3: text_glyph = 5'd20;     // T
+				default: text_glyph = GLYPH_SPACE;
+			endcase
+			default: text_glyph = GLYPH_SPACE;
 		endcase
 	end
 endfunction
 
-function [5:0] text_char;
-	input [1:0] text_id;
-	input [3:0] idx;
-	begin
-		text_char = 0;
-		case (text_id)
-			TEXT_TIME_UP: begin
-				case (idx)
-					0: text_char = 11; // T
-					1: text_char = 5;  // I
-					2: text_char = 6;  // M
-					3: text_char = 4;  // E
-					4: text_char = 0;
-					5: text_char = 12; // U
-					6: text_char = 8;  // P
-					default: text_char = 0;
-				endcase
-			end
-			TEXT_SCORE: begin
-				case (idx)
-					0: text_char = 10; // S
-					1: text_char = 3;  // C
-					2: text_char = 7;  // O
-					3: text_char = 9;  // R
-					4: text_char = 4;  // E
-					default: text_char = 0;
-				endcase
-			end
-			TEXT_BEST: begin
-				case (idx)
-					0: text_char = 2;  // B
-					1: text_char = 4;  // E
-					2: text_char = 10; // S
-					3: text_char = 11; // T
-					default: text_char = 0;
-				endcase
-			end
-			default: text_char = 0;
-		endcase
-	end
-endfunction
-
-function text_pixel;
-	input [`SVO_XYBITS-1:0] x;
-	input [`SVO_XYBITS-1:0] y;
-	input [1:0] text_id;
-	input [9:0] x0;
-	input [9:0] y0;
-	input [3:0] scale;
-	input [3:0] chars;
-	reg [9:0] rel_x;
-	reg [9:0] rel_y;
-	reg [3:0] char_idx;
-	reg [2:0] font_x;
-	reg [2:0] font_y;
-	reg [5:0] ch;
-	reg [4:0] row_bits;
-	begin
-		text_pixel = 0;
-		if (x >= x0 && x < x0 + chars * (6 * scale) &&
-			y >= y0 && y < y0 + 7 * scale) begin
-			rel_x = x - x0;
-			rel_y = y - y0;
-			char_idx = rel_x / (6 * scale);
-			font_x = (rel_x - char_idx * (6 * scale)) / scale;
-			font_y = rel_y / scale;
-			ch = text_char(text_id, char_idx);
-
-			if (char_idx < chars && font_x < 5 && font_y < 7 && ch != 0) begin
-				row_bits = font_row(ch, font_y);
-				text_pixel = row_bits[4 - font_x];
-			end
-		end
-	end
-endfunction
-
-function [6:0] digit_seg;
-	input [3:0] digit;
-	begin
-		case (digit)
-			4'd0: digit_seg = 7'b1111110;
-			4'd1: digit_seg = 7'b0110000;
-			4'd2: digit_seg = 7'b1101101;
-			4'd3: digit_seg = 7'b1111001;
-			4'd4: digit_seg = 7'b0110011;
-			4'd5: digit_seg = 7'b1011011;
-			4'd6: digit_seg = 7'b1011111;
-			4'd7: digit_seg = 7'b1110000;
-			4'd8: digit_seg = 7'b1111111;
-			4'd9: digit_seg = 7'b1111011;
-			default: digit_seg = 7'b0000001;
-		endcase
-	end
-endfunction
-
-function [6:0] scaled_seg_pixel;
-	input [5:0] x;
-	input [5:0] y;
-	input [3:0] scale;
-	reg [5:0] w;
-	reg [5:0] h;
-	reg [5:0] t;
-	reg x_mid;
-	reg x_left;
-	reg x_right;
-	reg y_top;
-	reg y_mid;
-	reg y_bottom;
-	reg y_upper;
-	reg y_lower;
-	begin
-		w = 12 * scale;
-		h = 20 * scale;
-		t = 2 * scale;
-		x_mid = x >= t && x < w - t;
-		x_left = x < t;
-		x_right = x >= w - t;
-		y_top = y < t;
-		y_mid = y >= h / 2 - t / 2 && y < h / 2 + t / 2;
-		y_bottom = y >= h - t;
-		y_upper = y >= t && y < h / 2;
-		y_lower = y >= h / 2 && y < h - t;
-
-		scaled_seg_pixel[6] = x_mid && y_top;
-		scaled_seg_pixel[5] = x_right && y_upper;
-		scaled_seg_pixel[4] = x_right && y_lower;
-		scaled_seg_pixel[3] = x_mid && y_bottom;
-		scaled_seg_pixel[2] = x_left && y_lower;
-		scaled_seg_pixel[1] = x_left && y_upper;
-		scaled_seg_pixel[0] = x_mid && y_mid;
-	end
-endfunction
-
-function digit_pixel;
-	input [3:0] digit;
-	input [5:0] x;
-	input [5:0] y;
-	input [3:0] scale;
-	begin
-		digit_pixel = |(digit_seg(digit) & scaled_seg_pixel(x, y, scale));
-	end
-endfunction
-
-function bcd_number_pixel;
-	input [`SVO_XYBITS-1:0] x;
-	input [`SVO_XYBITS-1:0] y;
-	input [9:0] x0;
-	input [9:0] y0;
-	input [11:0] bcd;
-	input [3:0] scale;
+// For a text field at base X with a given char stride & scaled glyph width,
+// report which char the pixel hits: {hit(1), idx(3), local_x(5)}.
+function [8:0] glyph_col;
+	input [`SVO_XYBITS-1:0] px;
+	input [9:0] base;
+	input [9:0] stride;
+	input [9:0] gw;
+	input [3:0] nchars;
 	integer i;
-	reg [9:0] digit_left;
-	reg [3:0] digit;
-	reg [5:0] rel_x;
-	reg [5:0] rel_y;
+	reg [9:0] cleft;
+	reg [4:0] lx;
 	begin
-		bcd_number_pixel = 0;
-		if (y >= y0 && y < y0 + 20 * scale) begin
-			for (i = 0; i < 3; i = i + 1) begin
-				digit_left = x0 + i * (14 * scale);
-				case (i)
-					0: digit = bcd[11:8];
-					1: digit = bcd[7:4];
-					default: digit = bcd[3:0];
-				endcase
-
-				if (x >= digit_left && x < digit_left + 12 * scale) begin
-					rel_x = x - digit_left;
-					rel_y = y - y0;
-					bcd_number_pixel = digit_pixel(digit, rel_x, rel_y, scale);
+		glyph_col = 9'd0;
+		for (i = 0; i < 7; i = i + 1) begin
+			if (i < nchars) begin
+				cleft = base + i * stride;
+				if (px >= cleft && px < cleft + gw) begin
+					lx = px - cleft;
+					glyph_col = {1'b1, i[2:0], lx};
 				end
 			end
 		end
 	end
 endfunction
 
-wire title_pixel = text_pixel(pixel_x, pixel_y, TEXT_TIME_UP, TITLE_X, TITLE_Y, 3, 7);
-wire score_label_pixel = text_pixel(pixel_x, pixel_y, TEXT_SCORE, SCORE_LABEL_X, SCORE_Y, 2, 5);
-wire best_label_pixel = text_pixel(pixel_x, pixel_y, TEXT_BEST, BEST_LABEL_X, BEST_Y, 2, 4);
-wire score_value_pixel = bcd_number_pixel(pixel_x, pixel_y, VALUE_X, SCORE_Y, score_bcd, 2);
-wire best_value_pixel = bcd_number_pixel(pixel_x, pixel_y, VALUE_X, BEST_Y, high_score_bcd, 2);
+// Combinational: pick the single text field this pixel lands in and compute
+// the glyph index, source column (font_x) and row (font_y). Fields occupy
+// disjoint screen regions, so an if-chain (guarded by !glyph_hit) is exact.
+reg        glyph_hit;
+reg        is_title;
+reg [4:0]  glyph;
+reg [2:0]  font_x;
+reg [3:0]  font_y;
 
-reg [23:0] overlay_data;
+reg [8:0]  gc;
+reg [2:0]  ci;
 
 always @(*) begin
-	overlay_data = in_axis_tdata;
+	glyph_hit = 1'b0;
+	is_title  = 1'b0;
+	glyph     = 5'd0;
+	font_x    = 3'd0;
+	font_y    = 4'd0;
+	gc        = 9'd0;
+	ci        = 3'd0;
 
-	if (show) begin
-		if (DIM_BACKGROUND)
-			overlay_data = dim_bgr888(in_axis_tdata);
+	// Title "TIME UP", scale 4
+	if (pixel_y >= TITLE_Y && pixel_y < TITLE_Y + 48) begin
+		gc = glyph_col(pixel_x, TITLE_X, TITLE_STRIDE, TITLE_GW, 4'd7);
+		if (gc[8]) begin
+			ci = gc[7:5];
+			glyph = text_glyph(TXT_TITLE, ci);
+			if (glyph != GLYPH_SPACE) begin
+				glyph_hit = 1'b1;
+				is_title  = 1'b1;
+				font_x    = gc[4:0] >> 2;
+				font_y    = (pixel_y - TITLE_Y) >> 2;
+			end
+		end
+	end
 
-		if (in_panel)
-			overlay_data = COLOR_PANEL;
+	// Score label "SCORE", scale 2
+	if (!glyph_hit && pixel_y >= SCORE_LABEL_Y && pixel_y < SCORE_LABEL_Y + 24) begin
+		gc = glyph_col(pixel_x, SCORE_LABEL_X, LABEL_STRIDE, LABEL_GW, 4'd5);
+		if (gc[8]) begin
+			ci = gc[7:5];
+			glyph = text_glyph(TXT_SCORE, ci);
+			if (glyph != GLYPH_SPACE) begin
+				glyph_hit = 1'b1;
+				font_x    = gc[4:0] >> 1;
+				font_y    = (pixel_y - SCORE_LABEL_Y) >> 1;
+			end
+		end
+	end
 
-		if (in_border)
-			overlay_data = COLOR_BORDER;
+	// Best label "BEST", scale 2
+	if (!glyph_hit && pixel_y >= BEST_LABEL_Y && pixel_y < BEST_LABEL_Y + 24) begin
+		gc = glyph_col(pixel_x, BEST_LABEL_X, LABEL_STRIDE, LABEL_GW, 4'd4);
+		if (gc[8]) begin
+			ci = gc[7:5];
+			glyph = text_glyph(TXT_BEST, ci);
+			if (glyph != GLYPH_SPACE) begin
+				glyph_hit = 1'b1;
+				font_x    = gc[4:0] >> 1;
+				font_y    = (pixel_y - BEST_LABEL_Y) >> 1;
+			end
+		end
+	end
 
-		if (title_pixel)
-			overlay_data = COLOR_TITLE;
+	// Score value (3 BCD digits), scale 4
+	if (!glyph_hit && pixel_y >= SCORE_VAL_Y && pixel_y < SCORE_VAL_Y + 48) begin
+		gc = glyph_col(pixel_x, VALUE_X, VAL_STRIDE, VAL_GW, 4'd3);
+		if (gc[8]) begin
+			ci = gc[7:5];
+			case (ci)
+				3'd0: glyph = {1'b0, score_bcd[11:8]};
+				3'd1: glyph = {1'b0, score_bcd[7:4]};
+				default: glyph = {1'b0, score_bcd[3:0]};
+			endcase
+			glyph_hit = 1'b1;
+			font_x    = gc[4:0] >> 2;
+			font_y    = (pixel_y - SCORE_VAL_Y) >> 2;
+		end
+	end
 
-		if (score_label_pixel || best_label_pixel ||
-			score_value_pixel || best_value_pixel)
-			overlay_data = COLOR_TEXT;
+	// Best value (3 BCD digits), scale 4
+	if (!glyph_hit && pixel_y >= BEST_VAL_Y && pixel_y < BEST_VAL_Y + 48) begin
+		gc = glyph_col(pixel_x, VALUE_X, VAL_STRIDE, VAL_GW, 4'd3);
+		if (gc[8]) begin
+			ci = gc[7:5];
+			case (ci)
+				3'd0: glyph = {1'b0, high_score_bcd[11:8]};
+				3'd1: glyph = {1'b0, high_score_bcd[7:4]};
+				default: glyph = {1'b0, high_score_bcd[3:0]};
+			endcase
+			glyph_hit = 1'b1;
+			font_x    = gc[4:0] >> 2;
+			font_y    = (pixel_y - BEST_VAL_Y) >> 2;
+		end
 	end
 end
 
-assign in_axis_tready = out_axis_tready;
-assign out_axis_tvalid = in_axis_tvalid;
-assign out_axis_tdata = overlay_data;
-assign out_axis_tuser = in_axis_tuser;
+wire [8:0] font_addr = {glyph, font_y};
+wire [5:0] font_row_bits;
+
+rom #(
+	.DATA_WIDTH(6),
+	.ADDR_WIDTH(9),
+	.DEPTH(512),
+	.INIT_FILE("src/assets/res_font.mem")
+) u_res_font_rom (
+	.clk(clk),
+	.addr(font_addr),
+	.data(font_row_bits)
+);
+
+// 1-stage pipeline to line up with the registered font ROM read (1 cycle),
+// mirroring ui_layer / obj_layer.
+reg glyph_hit_d;
+reg is_title_d;
+reg [2:0] font_x_d;
+reg show_d;
+reg in_panel_d;
+reg in_border_d;
+reg [SVO_BITS_PER_PIXEL-1:0] base_d;
+reg [0:0] tuser_d;
+reg tvalid_d;
+
+assign in_axis_tready  = out_axis_tready;
+assign out_axis_tvalid = tvalid_d;
+assign out_axis_tuser  = tuser_d;
+
+wire glyph_on = glyph_hit_d & font_row_bits[3'd5 - font_x_d];
+wire [23:0] dimmed = DIM_BACKGROUND ? dim_bgr888(base_d) : base_d;
+wire [23:0] bg_sel = show_d ? dimmed : base_d;
+
+assign out_axis_tdata =
+	(show_d && glyph_on)     ? (is_title_d ? COLOR_TITLE : COLOR_TEXT) :
+	(show_d && in_border_d)  ? COLOR_BORDER :
+	(show_d && in_panel_d)   ? COLOR_PANEL :
+							   bg_sel;
+
+always @(posedge clk) begin
+	if (!resetn) begin
+		glyph_hit_d <= 0;
+		is_title_d <= 0;
+		font_x_d <= 0;
+		show_d <= 0;
+		in_panel_d <= 0;
+		in_border_d <= 0;
+		base_d <= 0;
+		tuser_d <= 0;
+		tvalid_d <= 0;
+	end else if (out_axis_tready) begin
+		tvalid_d <= in_axis_tvalid;
+		if (fire) begin
+			glyph_hit_d <= glyph_hit;
+			is_title_d <= is_title;
+			font_x_d <= font_x;
+			show_d <= show;
+			in_panel_d <= in_panel;
+			in_border_d <= in_border;
+			base_d <= in_axis_tdata;
+			tuser_d <= in_axis_tuser;
+		end
+	end
+end
 
 always @(posedge clk) begin
 	if (!resetn) begin

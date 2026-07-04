@@ -1,18 +1,26 @@
 param(
     [string]$InputDir = "bitmap",
-    [string]$OutputFile = "src\assets\font.mem"
+    [string]$DigitFile = "src\assets\font.mem",
+    [string]$ResFile   = "src\assets\res_font.mem"
 )
 
-# Packs the 6x12 ASCII digit bitmaps in bitmap/0.txt .. 9.txt into a 1-bit
-# font ROM for ui_layer. Each glyph row becomes a 6-bit word (MSB = leftmost
-# column, i.e. bit 5 = column 0), so the .mem hex reads left-to-right like the
-# glyph. Each digit is padded from 12 to 16 rows so the Verilog address can be
-# {digit[3:0], src_y[3:0]} with no multiply. Output: 160 lines x 2 hex.
+# Packs the 6x12 ASCII glyphs in bitmap/*.txt into 1-bit font ROMs.
+# Each glyph row becomes a 6-bit word (MSB = leftmost column, i.e. bit 5 =
+# column 0), so the .mem hex reads left-to-right like the glyph. Each glyph is
+# padded from 12 to 16 rows so the Verilog address can be {glyph, src_y} with
+# no multiply.
+#
+# Two outputs:
+#   font.mem     - digits 0-9 only (used by ui_layer, 160 lines). Unchanged.
+#   res_font.mem - shared digit+letter font (used by res_overlay, 512 lines):
+#                    index 0-9  = digits (reused from bitmap/0..9.txt)
+#                    index 10   = space (blank)
+#                    index 11-21= B C E I M O P R S T U
+#                    index 22-31= blank padding
 
 $COLS = 6
 $ROWS = 12
 $PADDED_ROWS = 16
-$DIGITS = 10
 
 $ROOT = Split-Path -Parent $PSScriptRoot
 
@@ -23,40 +31,63 @@ function Resolve-LocalPath {
 }
 
 $InputPath = Resolve-LocalPath $InputDir
-$OutputPath = Resolve-LocalPath $OutputFile
-
 if (!(Test-Path $InputPath -PathType Container)) {
     throw "Input folder not found: $InputPath"
 }
 
-New-Item -ItemType Directory -Force -Path (Split-Path -Parent $OutputPath) | Out-Null
+# glyph index -> source basename in bitmap/, or $null for a blank glyph
+$resGlyphs = New-Object object[] 32
+for ($i = 0; $i -lt 32; $i++) { $resGlyphs[$i] = $null }
+foreach ($d in 0..9) { $resGlyphs[$d] = "$d" }
+$letters = @('B','C','E','I','M','O','P','R','S','T','U')  # indices 11..21
+for ($i = 0; $i -lt $letters.Count; $i++) { $resGlyphs[11 + $i] = $letters[$i] }
 
-$writer = [System.IO.StreamWriter]::new($OutputPath, $false, [System.Text.Encoding]::ASCII)
+# Return the 16 packed hex words for one glyph (blank if $basename is $null).
+function Pack-Glyph {
+    param([string]$basename)
 
-try {
-    for ($d = 0; $d -lt $DIGITS; $d++) {
-        $txtPath = Join-Path $InputPath ("{0}.txt" -f $d)
-        if (!(Test-Path $txtPath -PathType Leaf)) {
-            throw "Missing glyph file: $txtPath"
-        }
-        $lines = @(Get-Content -Path $txtPath)
+    $lines = @()
+    if ($basename) {
+        $p = Join-Path $InputPath ("{0}.txt" -f $basename)
+        if (!(Test-Path $p -PathType Leaf)) { throw "Missing glyph file: $p" }
+        $lines = @(Get-Content -Path $p)
+    }
 
-        for ($r = 0; $r -lt $PADDED_ROWS; $r++) {
-            $word = 0
-            if ($r -lt $ROWS -and $r -lt $lines.Count) {
-                $line = $lines[$r]
-                for ($c = 0; $c -lt $COLS; $c++) {
-                    if ($c -lt $line.Length -and $line[$c] -eq '#') {
-                        $word = $word -bor (1 -shl ($COLS - 1 - $c))
-                    }
+    $words = New-Object string[] $PADDED_ROWS
+    for ($r = 0; $r -lt $PADDED_ROWS; $r++) {
+        $word = 0
+        if ($r -lt $ROWS -and $r -lt $lines.Count) {
+            $line = $lines[$r]
+            for ($c = 0; $c -lt $COLS; $c++) {
+                if ($c -lt $line.Length -and $line[$c] -eq '#') {
+                    $word = $word -bor (1 -shl ($COLS - 1 - $c))
                 }
             }
-            $writer.WriteLine("{0:X2}" -f $word)
         }
+        $words[$r] = "{0:X2}" -f $word
     }
-}
-finally {
-    $writer.Dispose()
+    return ,$words
 }
 
-Write-Host "Wrote $OutputPath ($($DIGITS * $PADDED_ROWS) lines, ${COLS}-bit words)."
+function Write-Mem {
+    param([string]$outPath, [object[]]$glyphs)
+
+    $full = Resolve-LocalPath $outPath
+    New-Item -ItemType Directory -Force -Path (Split-Path -Parent $full) | Out-Null
+    $writer = [System.IO.StreamWriter]::new($full, $false, [System.Text.Encoding]::ASCII)
+    try {
+        foreach ($g in $glyphs) {
+            foreach ($w in (Pack-Glyph $g)) { $writer.WriteLine($w) }
+        }
+    } finally {
+        $writer.Dispose()
+    }
+    Write-Host "Wrote $full ($($glyphs.Count * $PADDED_ROWS) lines)."
+}
+
+# ui digit font: glyphs 0..9 only
+$digitGlyphs = @('0','1','2','3','4','5','6','7','8','9')
+Write-Mem $DigitFile $digitGlyphs
+
+# res combined font: 32 glyph slots
+Write-Mem $ResFile $resGlyphs

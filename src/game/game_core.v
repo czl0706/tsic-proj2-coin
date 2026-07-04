@@ -25,7 +25,7 @@ module game_core #(
 	output [SVO_BITS_PER_PIXEL-1:0] out_axis_tdata,
 	output [0:0] out_axis_tuser
 );
-localparam MAX_OBJ = 16;
+localparam MAX_OBJ = 8;
 localparam LANE_BITS = 4;
 localparam XOFF_BITS = 4;
 localparam OBJ_TYPE_BITS = 3;
