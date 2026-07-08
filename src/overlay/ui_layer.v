@@ -32,6 +32,7 @@ module ui_layer #(
 `SVO_DECLS
 
 localparam UI_TOP = 416;
+localparam UI_TOP_BAR_H = 16;   // dark bar above the background image band
 localparam DIGIT_Y = 424;
 localparam DIGIT_W = 24;
 localparam DIGIT_H = 48;
@@ -244,7 +245,7 @@ rom #(
 
 // Non-glyph overlay decisions (cheap rectangles), all combinational this cycle.
 wire score_on = !game_over || blink_on;
-wire in_ui = pixel_y >= UI_TOP;
+wire in_ui = (pixel_y >= UI_TOP) || (pixel_y < UI_TOP_BAR_H);
 wire charge_pixel = SKILL_ENABLE && charge_bar_pixel(pixel_x, pixel_y, skill_charge);
 wire left_indicator = btn_left && pixel_y >= UI_TOP + 8 && pixel_y < UI_TOP + 56 &&
 						pixel_x >= 4 && pixel_x < 20;

@@ -97,9 +97,10 @@ hdmi_coin/
 - Output mode: `640x480V`
 - Resolution: 640 x 480
 - Frame rate: 60 Hz
+- Layout: top 16 px UI bar, a 640 x 400 background image band (`Y 16..415`), bottom 64 px UI bar
 - Internal stream: AXIS-like valid/ready/data/user
 - Stream pixel format: 24-bit BGR888
-- ROM asset formats: RGB565 `.mem` (background, objects), RGB323 8-bit `.mem` (player), 1-bit packed font `.mem` (UI/result text)
+- ROM asset formats: RGB565 `.mem` (background), RGB323 8-bit `.mem` (player, objects), 1-bit packed font `.mem` (UI/result text)
 
 The stream interface between `game_core` and `svo_hdmi` is:
 
@@ -275,10 +276,10 @@ src/assets/obj_atlas.mem   (all 7 sprites, RGB323, one 256-entry slot per type)
 
 Generates the base stream:
 
-- reads `src/assets/background.mem`
-- source tile is 32 x 32 RGB565
-- display tile is 64 x 64 by 2x pixel replication
-- repeats across the 640 x 480 screen
+- reads `src/assets/background.mem` (single 80 x 50 RGB565 image)
+- shown 8x by pixel replication in the band `Y in [16, 416)`, `X in [0, 640)` (640 x 400)
+- ROM address is `src_y * 80 + src_x`; outside the band it outputs dark gray (`0x181818`)
+- the top 16 px and bottom 64 px are the UI bars (drawn by `ui_layer`)
 
 ### `obj_layer`
 
@@ -296,7 +297,7 @@ Sprite ROM reads are synchronous, so hit flags and background pixels are delayed
 
 ### `ui_layer`
 
-Receives the object stream and overlays the bottom 64-pixel UI.
+Receives the object stream and overlays the top 16-pixel and bottom 64-pixel UI bars.
 
 Layout:
 
@@ -308,6 +309,7 @@ right   high score, 3 digits
 
 Current UI behavior:
 
+- a 16 px dark bar at the very top (above the background image band)
 - no English labels
 - left/right button indicators at screen edges
 - center score blinks during game over
@@ -452,9 +454,10 @@ Conversion rules:
 - Object atlas: the object sprites are packed in gameplay type order 0-6 into a single
   `obj_atlas.mem` (not one file each), so `obj_layer` reads them from one ROM.
 - Auto-size: any-size source art is scaled (aspect-preserved, high-quality bicubic,
-  transparent pad) to fit the target `N x N` box. `N` comes from the trailing `_<N>` in
-  the base name (`obj_plus1_16` -> 16, `player_right_32` -> 32), or from the `FitSize`
-  override for bases with no size suffix (`background` -> 32).
+  transparent pad) to fit the target `N x N` box, from the trailing `_<N>` in the base
+  name (`obj_plus1_16` -> 16, `player_right_32` -> 32) or the `FitSize` override.
+- Stretch (big image): bases in `StretchSize` are resized to exactly `W x H`, aspect
+  ratio NOT preserved (accepts distortion). `background` -> `80 x 50` (full-screen tile).
 - Animation frames: files named `<base>.<N>.png` (e.g. `player_right_32.0.png`,
   `player_right_32.1.png`) are concatenated in index order into a single multi-frame
   `<base>.mem`.
@@ -546,7 +549,7 @@ Implemented:
 - 640 x 480 HDMI output
 - separated `reset_sync` from `top`
 - separated `game_core` and `svo_hdmi`
-- background tile layer
+- background layer: single 80 x 50 RGB565 image, shown 8x in the 640 x 400 middle band
 - object layer with RGB323 object sprites in a single atlas ROM (type in the address)
 - animated RGB323 player sprite (two-frame walk, mirror-for-left, skill sprite swap)
 - UI layer with timer, score, high score, and button indicators, using a pixel font ROM
@@ -565,7 +568,7 @@ Open items:
 - tune sprite art
 - decide whether to add an idle/start screen
 - add more gameplay feedback if needed
-- watch Gowin resource usage (currently Logic ~64%, CLS ~83%, BSRAM 6/10 on GW1NSR-4C)
+- watch Gowin resource usage (currently Logic ~66%, CLS ~84%, BSRAM 9/10 on GW1NSR-4C)
 
 ---
 
@@ -668,9 +671,10 @@ hdmi_coin/
 - 輸出模式：`640x480V`
 - 解析度：640 x 480
 - 更新率：60 Hz
+- 版面：上方 16px UI 條、640 x 400 背景圖帶（`Y 16..415`）、下方 64px UI 條
 - 內部串流：類 AXIS 的 valid/ready/data/user
 - 串流像素格式：24-bit BGR888
-- ROM 資產格式：RGB565 `.mem`（背景、物件）、RGB323 8-bit `.mem`（玩家）、1-bit 打包字型 `.mem`（UI／結算文字）
+- ROM 資產格式：RGB565 `.mem`（背景）、RGB323 8-bit `.mem`（玩家、物件）、1-bit 打包字型 `.mem`（UI／結算文字）
 
 `game_core` 與 `svo_hdmi` 之間的串流介面為：
 
@@ -844,10 +848,10 @@ src/assets/obj_atlas.mem   (all 7 sprites, RGB323, one 256-entry slot per type)
 
 產生基底串流：
 
-- 讀取 `src/assets/background.mem`
-- 來源圖磚為 32 x 32 RGB565
-- 顯示圖磚以 2 倍像素複製為 64 x 64
-- 在 640 x 480 螢幕上重複鋪排
+- 讀取 `src/assets/background.mem`（單張 80 x 50 RGB565 大圖）
+- 以 8 倍像素複製顯示於 `Y ∈ [16, 416)`、`X ∈ [0, 640)` 的圖帶（640 x 400）
+- ROM 位址為 `src_y * 80 + src_x`；圖帶外輸出深灰（`0x181818`）
+- 上方 16px 與下方 64px 為 UI 條（由 `ui_layer` 繪製）
 
 ### `obj_layer`
 
@@ -865,7 +869,7 @@ background
 
 ### `ui_layer`
 
-接收物件串流，並在畫面底部疊上 64 像素高的 UI。
+接收物件串流，並疊上上方 16 像素與下方 64 像素的 UI 條。
 
 版面配置：
 
@@ -877,6 +881,7 @@ right   high score, 3 digits
 
 目前 UI 行為：
 
+- 最上方一條 16px 深灰條（在背景圖帶上方）
 - 無英文標籤
 - 螢幕兩側有左／右按鈕指示
 - game over 時中央分數會閃爍
@@ -1011,7 +1016,8 @@ output: src/assets
 - 色彩格式預設為 RGB565；玩家 sprite（`Sprites8bit`）與物件 sprite（`ObjAtlas`）則寫成 RGB323 8-bit。
 - 透明一律只來自 PNG alpha（`A==0` -> `00`），沒有黑色色鍵。
 - 物件 atlas：物件 sprite 依 type 順序 0-6 打包成單一 `obj_atlas.mem`（不再一個檔一個），讓 `obj_layer` 用一顆 ROM 讀取。
-- 自動尺寸：任意尺寸的來源圖會被縮放（保持長寬比、高品質 bicubic、透明填邊）以符合目標 `N x N` 方框。`N` 取自基底名尾端的 `_<N>`（`obj_plus1_16` -> 16、`player_right_32` -> 32），或取自無尺寸後綴基底的 `FitSize` 覆寫值（`background` -> 32）。
+- 自動尺寸：任意尺寸的來源圖會被縮放（保持長寬比、高品質 bicubic、透明填邊）以符合目標 `N x N` 方框，`N` 取自基底名尾端 `_<N>`（`obj_plus1_16` -> 16、`player_right_32` -> 32）或 `FitSize` 覆寫值。
+- 大圖拉伸：`StretchSize` 內的基底會被縮放到剛好 `W x H`、**不保持長寬比**（接受變形）。`background` -> `80 x 50`（全螢幕背景）。
 - 動畫影格：命名為 `<base>.<N>.png` 的檔案（例如 `player_right_32.0.png`、`player_right_32.1.png`）會依索引順序串接成單一多影格的 `<base>.mem`。
 
 從 PowerShell 執行：
@@ -1100,7 +1106,7 @@ C:\Gowin\Gowin_V1.9.11.03_Education_x64
 - 640 x 480 HDMI 輸出
 - 將 `reset_sync` 從 `top` 分離
 - 將 `game_core` 與 `svo_hdmi` 分離
-- 背景圖磚圖層
+- 背景圖層：單張 80 x 50 RGB565 大圖，於 640 x 400 中段帶以 8 倍顯示
 - 使用 RGB323 物件圖素、單一 atlas ROM 的物件圖層（type 併入位址）
 - 動畫化的 RGB323 玩家圖素（兩格走路、左向鏡射、技能圖素切換）
 - 具計時器、分數、最高分與按鈕指示的 UI 圖層，使用像素字型 ROM
@@ -1119,4 +1125,4 @@ C:\Gowin\Gowin_V1.9.11.03_Education_x64
 - 調整圖素美術
 - 決定是否加入待機／開始畫面
 - 視需要增加更多遊戲回饋
-- 留意 Gowin 資源用量（目前 GW1NSR-4C 上 Logic ~64%、CLS ~83%、BSRAM 6/10）
+- 留意 Gowin 資源用量（目前 GW1NSR-4C 上 Logic ~66%、CLS ~84%、BSRAM 9/10）

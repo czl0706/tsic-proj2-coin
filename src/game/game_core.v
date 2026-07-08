@@ -107,8 +107,6 @@ game_ctrl #(
 
 bg_layer #(
 	`SVO_PASS_PARAMS,
-	.BG_SRC_X_BITS(5),
-	.BG_SRC_Y_BITS(5),
 	.BG_TILE_FILE("src/assets/background.mem")
 ) u_bg_layer (
 	.clk(clk),

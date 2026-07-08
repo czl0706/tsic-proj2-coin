@@ -3,8 +3,9 @@
 
 module bg_layer #(
 	`SVO_DEFAULT_PARAMS,
-	parameter BG_SRC_X_BITS = 5,
-	parameter BG_SRC_Y_BITS = 5,
+	parameter BG_IMG_W = 80,
+	parameter BG_IMG_H = 50,
+	parameter BG_Y0 = 16,                        // top of the image band
 	parameter BG_TILE_FILE = "src/assets/background.mem"
 ) (
 	input clk,
@@ -17,21 +18,23 @@ module bg_layer #(
 );
 `SVO_DECLS
 
-localparam BG_SRC_ADDR_WIDTH = BG_SRC_X_BITS + BG_SRC_Y_BITS;
-localparam BG_SRC_DEPTH = 1 << BG_SRC_ADDR_WIDTH;
-localparam BG_DST_X_BITS = BG_SRC_X_BITS + 1;
-localparam BG_DST_Y_BITS = BG_SRC_Y_BITS + 1;
+localparam BG_DEPTH = 4096;                      // >= BG_IMG_W * BG_IMG_H (4000)
+localparam BG_ADDR_WIDTH = 12;
+localparam BG_Y1 = BG_Y0 + BG_IMG_H * 8;         // band bottom (exclusive) = 16 + 400 = 416
+localparam [23:0] BG_MARGIN_RGB = 24'h181818;    // dark gray outside the band (matches UI)
 
 reg [`SVO_XYBITS-1:0] hcursor, vcursor;
 reg pipe_valid;
 reg pipe_tuser;
+reg pipe_in_band;
 
-// Map the destination pixel coordinates to source tile coordinates
-// 32x32 -> 64x64 scaling by 2x pixel replication
-wire [BG_SRC_X_BITS-1:0] bg_src_x = hcursor[BG_SRC_X_BITS:1];
-wire [BG_SRC_Y_BITS-1:0] bg_src_y = vcursor[BG_SRC_Y_BITS:1];
-
-wire [BG_SRC_ADDR_WIDTH-1:0] bg_addr = {bg_src_y, bg_src_x};
+// Single 80x50 image shown 8x (pixel replication) in the band Y in [BG_Y0, BG_Y1),
+// X in [0, 640). Address = src_y*80 + src_x (small constant multiply).
+wire in_band = (vcursor >= BG_Y0) && (vcursor < BG_Y1);
+wire [6:0] bg_src_x = hcursor[9:3];              // hcursor / 8 -> 0..79
+wire [`SVO_XYBITS-1:0] bg_rel_y = vcursor - BG_Y0;
+wire [5:0] bg_src_y = bg_rel_y[8:3];             // (vcursor - 16) / 8 -> 0..49
+wire [BG_ADDR_WIDTH-1:0] bg_addr = bg_src_y * BG_IMG_W + bg_src_x;
 wire [15:0] bg_rgb565;
 
 function [23:0] rgb565_to_bgr888;
@@ -53,16 +56,18 @@ always @(posedge clk) begin
 		vcursor <= 0;
 		pipe_valid <= 0;
 		pipe_tuser <= 0;
+		pipe_in_band <= 0;
 		out_axis_tvalid <= 0;
 		out_axis_tdata <= 0;
 		out_axis_tuser <= 0;
 	end else if (!out_axis_tvalid || out_axis_tready) begin
 		out_axis_tvalid   <= pipe_valid;
-		out_axis_tdata    <= rgb565_to_bgr888(bg_rgb565);
+		out_axis_tdata    <= pipe_in_band ? rgb565_to_bgr888(bg_rgb565) : BG_MARGIN_RGB;
 		out_axis_tuser[0] <= pipe_tuser;
 
 		pipe_valid <= 1;
 		pipe_tuser <= hcursor == 0 && vcursor == 0;
+		pipe_in_band <= in_band;
 
 		if (hcursor == SVO_HOR_PIXELS - 1) begin
 			hcursor <= 0;
@@ -78,8 +83,8 @@ end
 
 rom #(
 	.DATA_WIDTH(16),
-	.ADDR_WIDTH(BG_SRC_ADDR_WIDTH),
-	.DEPTH(BG_SRC_DEPTH),
+	.ADDR_WIDTH(BG_ADDR_WIDTH),
+	.DEPTH(BG_DEPTH),
 	.INIT_FILE(BG_TILE_FILE)
 ) u_bg_rom (
 	.clk(clk),

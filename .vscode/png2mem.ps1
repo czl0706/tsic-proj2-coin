@@ -10,8 +10,11 @@ param(
     # Target sprite box size (N x N) is taken from the trailing "_<N>" in the
     # base name (e.g. obj_plus1_16 -> 16, player_right_32 -> 32); any-size source
     # art is scaled to fit (aspect-preserved, transparent pad). This map is an
-    # override for bases that have no size suffix (e.g. background).
-    [hashtable]$FitSize = @{ "background" = 32 }
+    # override for bases that have no size suffix.
+    [hashtable]$FitSize = @{ },
+    # Big-image mode: bases here are STRETCHED to exactly W x H (aspect ratio NOT
+    # preserved, no transparent pad). Used for the full-screen background tile.
+    [hashtable]$StretchSize = @{ "background" = @(80, 50) }
 )
 
 Add-Type -AssemblyName System.Drawing
@@ -62,6 +65,18 @@ function Fit-Bitmap {
     return $dst
 }
 
+# Stretch a bitmap to exactly W x H, ignoring aspect ratio (accepts distortion).
+function Stretch-Bitmap {
+    param($src, [int]$w, [int]$h)
+    $dst = New-Object System.Drawing.Bitmap($w, $h, [System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
+    $g = [System.Drawing.Graphics]::FromImage($dst)
+    $g.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
+    $g.PixelOffsetMode = [System.Drawing.Drawing2D.PixelOffsetMode]::HighQuality
+    $g.DrawImage($src, 0, 0, $w, $h)
+    $g.Dispose()
+    return $dst
+}
+
 # Target N x N box for a base: explicit override, else trailing "_<N>", else 0 (none).
 function Get-TargetSize {
     param([string]$base)
@@ -70,10 +85,21 @@ function Get-TargetSize {
     return 0
 }
 
-# Load a sprite bitmap for the given base, scaling to fit its target box if any.
+# Load a sprite bitmap for the given base: stretch to W x H if listed in
+# $StretchSize, else fit (aspect-preserved) to its N x N target box if any.
 function Load-Sprite {
     param([string]$path, [string]$base)
     $bmp = [System.Drawing.Bitmap]::new($path)
+    if ($StretchSize.ContainsKey($base)) {
+        $wh = $StretchSize[$base]
+        $w = [int]$wh[0]; $h = [int]$wh[1]
+        if ($bmp.Width -ne $w -or $bmp.Height -ne $h) {
+            $stretched = Stretch-Bitmap $bmp $w $h
+            $bmp.Dispose()
+            return $stretched
+        }
+        return $bmp
+    }
     $n = Get-TargetSize $base
     if ($n -gt 0 -and ($bmp.Width -ne $n -or $bmp.Height -ne $n)) {
         $fitted = Fit-Bitmap $bmp $n
